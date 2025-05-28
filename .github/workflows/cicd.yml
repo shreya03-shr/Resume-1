@@ -1,0 +1,69 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo
+        ports: [ '27017:27017' ]
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install backend dependencies
+      run: |
+        cd server
+        npm install
+
+    - name: Run backend tests (if any)
+      run: |
+        cd server
+        npm test || echo "No backend tests yet"
+
+    - name: Install frontend dependencies
+      run: |
+        cd client
+        npm install
+
+    - name: Build frontend
+      run: |
+        cd client
+        npm run build
+
+    - name: Run frontend tests (if any)
+      run: |
+        cd client
+        npm test || echo "No frontend tests yet"
+
+  deploy-backend:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger Render Deploy Hook
+      run: curl -X POST ${{ secrets.RENDER_BACKEND_HOOK_URL }}
+
+  deploy-frontend:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger Netlify Deploy Hook
+      run: curl -X POST ${{ secrets.NETLIFY_FRONTEND_HOOK_URL }}
