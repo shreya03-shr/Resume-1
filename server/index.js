@@ -25,7 +25,7 @@ app.use('/api/gpt-ats-analyzer', gptAtsAnalyzer);
 app.use('/api/ats', atsRoutes);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/mernapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
